@@ -31,6 +31,8 @@ namespace InfoRetrieval.Controllers
             return await _context.Documents.ToListAsync();
         }
 
+        
+
         [ApiExplorerSettings(IgnoreApi = true)]
         public static string StripPunctuation(string s)
         {
@@ -75,8 +77,9 @@ namespace InfoRetrieval.Controllers
             {
                 return NotFound();
             }
-            ProcessDocument(Document.rawDocument);
             
+            Document.terms= ProcessDocument(Document.rawDocument);
+            await _context.SaveChangesAsync();
 
             return Document;
         }
@@ -116,6 +119,8 @@ namespace InfoRetrieval.Controllers
         [HttpPost]
         public async Task<ActionResult<Documents>> PostDocuments(Documents Documents)
         {
+            var procDoc = ProcessDocument(Documents.rawDocument);
+            Documents.terms = procDoc;
             _context.Documents.Add(Documents);
             await _context.SaveChangesAsync();
 

@@ -10,6 +10,7 @@ namespace InfoRetrieval.Models
     {
         [Key]
         public int termId { get; set; }
+        public string term { get; set; }
         public int[] docID { get; set; }
         public double[] tfPerDoc { get; set; }
         public double df { get; set; }

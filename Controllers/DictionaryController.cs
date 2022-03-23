@@ -13,7 +13,7 @@ using StopWord;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
-namespace InfoRetrieval.Models
+namespace InfoRetrieval.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -28,7 +28,14 @@ namespace InfoRetrieval.Models
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Dictionary>>> GetDictionary()
         {
-            return await _context.Dictionary.ToListAsync();
+            var a = _context.Dictionary.ToListAsync();
+            return await a;
+        }
+        [HttpGet("termms")]
+        public async Task<ActionResult<IEnumerable<string>>> GetTerms()
+        {
+            var a = _context.Dictionary.Select(x => x.term).ToListAsync();
+            return await a;
         }
 
         [HttpGet("update-database")]
@@ -49,6 +56,8 @@ namespace InfoRetrieval.Models
                         newTerm.tfPerDoc = new double[] { 1};
                         newTerm.df = 0;
                         _context.Dictionary.Add(newTerm);
+                        _context.SaveChanges();
+                        dictTerms = await _context.Dictionary.ToListAsync();
                     }
                     else
                     {
@@ -59,21 +68,27 @@ namespace InfoRetrieval.Models
                             {
                                 if (dictterm.docID.Contains(doc.docID))
                                 {
+                                    Console.WriteLine(term +"buldu tf arttirdi");
                                     for (int i = 0; i < dictterm.docID.Length; i++)
                                     {
                                         if (dictterm.docID[i] == doc.docID)
                                         {
                                             dictterm.tfPerDoc[i] += 1;
                                             _context.Dictionary.Update(dictterm);
+                                            _context.SaveChanges();
+                                            dictTerms = await _context.Dictionary.ToListAsync();
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    dictterm.docID.Append(doc.docID);
-                                    dictterm.tfPerDoc.Append(1);
-                                    //_context.Dictionary.Update(dictterm);
-                                    _context.Entry(dictterm).State = EntityState.Modified;
+                                    Console.WriteLine(term+"buldu icinde docIDsi yokmus ama docID.length="+dictterm.docID.Length);
+                                    dictterm.docID=dictterm.docID.Append(doc.docID).ToArray();
+                                    dictterm.tfPerDoc=dictterm.tfPerDoc.Append(1).ToArray();
+                                    Console.WriteLine("simdi bu="+dictterm.docID.Length);
+                                    _context.Dictionary.Update(dictterm);
+                                    _context.SaveChanges();
+                                    dictTerms = await _context.Dictionary.ToListAsync();
                                 }
                                 goto bos;
                             }
@@ -89,9 +104,11 @@ namespace InfoRetrieval.Models
                         newTerm.tfPerDoc = new double[] { 1 };
                         newTerm.df = 0;
                         _context.Dictionary.Add(newTerm);
+                        _context.SaveChanges();
+                        dictTerms = await _context.Dictionary.ToListAsync();
 
 
-                        bos:
+                    bos:
                         Console.WriteLine("test"); 
 
                     }
@@ -119,6 +136,8 @@ namespace InfoRetrieval.Models
 
             return Document;
         }
+
+
 
         // PUT: api/Dictionary/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754

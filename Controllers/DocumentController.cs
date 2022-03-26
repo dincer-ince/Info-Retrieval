@@ -47,7 +47,8 @@ namespace InfoRetrieval.Controllers
                     {
                         if (term.docID[i] == doc1.docID)
                         {
-                            doc1Vector.Add((term.tfPerDoc[i] / doc1.terms.Length) * (1+(Math.Log((dictionary.Count/term.docID.Length),2))));
+                            //doc1Vector.Add((term.tfPerDoc[i] / doc1.terms.Length) * (1+(Math.Log((_context.Documents.Count()/term.docID.Length),2))));
+                            doc1Vector.Add(    (1+Math.Log10(term.tfPerDoc[i])) * (1 + (Math.Log10((_context.Documents.Count() / term.docID.Length)))));
                         }
                     }
                 }
@@ -91,6 +92,31 @@ namespace InfoRetrieval.Controllers
 
             return dotproduct / sqrtdocs;
         }
+        [HttpGet("MostSimilarDocuments")]
+        public String MostSimilarTwoDocuments()
+        {
+            var docs = _context.Documents.ToList();
+            int[] docpair = new int[2];
+            double tempsim = 0;
+            for (int i = 0; i < docs.Count; i++)
+            {
+                for (int j = 0; j < docs.Count; j++)
+                {
+                    if (docs[i].docID != docs[j].docID)
+                    {
+                        var a =getCosineSimilarity(docs[i].docID, docs[j].docID);
+                        if (a > tempsim)
+                        {
+                            tempsim = a;
+                            docpair[0] = i;
+                            docpair[1] = j;
+                        }
+                    }
+                }
+            }
+            string result = "highest Cosine similarity between all documents= " + tempsim + " between documents " + docpair[0] + "and " + docpair[1] + ".\n Documents are: \n" + docs[docpair[0]].rawDocument + "\n \n" + docs[docpair[1]].rawDocument + ".";
+            return result;
+        }
 
 
 
@@ -102,7 +128,86 @@ namespace InfoRetrieval.Controllers
             return await _context.Documents.ToListAsync();
         }
 
-        
+        [ApiExplorerSettings(IgnoreApi = true)]
+        public async Task<ActionResult<IEnumerable<Dictionary>>> UpdateDictionary(Documents doc)
+        {
+            
+            var dictTerms = await _context.Dictionary.ToListAsync();
+            foreach (var term in doc.terms)
+            {
+                if (dictTerms.Count == 0)
+                {
+                    var newTerm = new Dictionary();
+                    newTerm.termId = 0;
+                    newTerm.docID = new int[] { doc.docID };
+                    newTerm.term = term;
+                    newTerm.tfPerDoc = new double[] { 1 };
+                    newTerm.df = 0;
+                    _context.Dictionary.Add(newTerm);
+                    _context.SaveChanges();
+                    dictTerms = await _context.Dictionary.ToListAsync();
+                }
+                else
+                {
+
+                    foreach (var dictterm in dictTerms)
+                    {
+                        if (dictterm.term == term)
+                        {
+                            if (dictterm.docID.Contains(doc.docID))
+                            {
+                                Console.WriteLine(term + "buldu tf arttirdi");
+                                for (int i = 0; i < dictterm.docID.Length; i++)
+                                {
+                                    if (dictterm.docID[i] == doc.docID)
+                                    {
+                                        dictterm.tfPerDoc[i] += 1;
+                                        _context.Dictionary.Update(dictterm);
+                                        _context.SaveChanges();
+                                        dictTerms = await _context.Dictionary.ToListAsync();
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine(term + "buldu icinde docIDsi yokmus ama docID.length=" + dictterm.docID.Length);
+                                dictterm.docID = dictterm.docID.Append(doc.docID).ToArray();
+                                dictterm.tfPerDoc = dictterm.tfPerDoc.Append(1).ToArray();
+                                Console.WriteLine("simdi bu=" + dictterm.docID.Length);
+                                _context.Dictionary.Update(dictterm);
+                                _context.SaveChanges();
+                                dictTerms = await _context.Dictionary.ToListAsync();
+                            }
+                            goto bos;
+                        }
+
+                    }
+
+
+
+                    var newTerm = new Dictionary();
+                    newTerm.termId = 0;
+                    newTerm.docID = new int[] { doc.docID };
+                    newTerm.term = term;
+                    newTerm.tfPerDoc = new double[] { 1 };
+                    newTerm.df = 0;
+                    _context.Dictionary.Add(newTerm);
+                    _context.SaveChanges();
+                    dictTerms = await _context.Dictionary.ToListAsync();
+
+
+                bos:
+                    Console.WriteLine("test");
+
+                }
+
+            }
+            _context.SaveChanges();
+            Console.WriteLine("done");
+            return await _context.Dictionary.ToListAsync();
+        }
+
+
 
         [ApiExplorerSettings(IgnoreApi = true)]
         public static string StripPunctuation(string s)
@@ -233,7 +338,7 @@ namespace InfoRetrieval.Controllers
             Documents.terms = procDoc;
             _context.Documents.Add(Documents);
             await _context.SaveChangesAsync();
-
+            await UpdateDictionary(Documents);
             return CreatedAtAction("GetDocuments", new { id = Documents.docID }, Documents);
         }
 

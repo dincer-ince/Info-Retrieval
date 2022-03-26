@@ -38,6 +38,7 @@ namespace InfoRetrieval.Controllers
             List<double> doc1Vector = new List<double>();
             
             var dictionary = _context.Dictionary.ToList();
+            var docCount = _context.Documents.Count();
 
             foreach (var term in dictionary)
             {
@@ -48,7 +49,7 @@ namespace InfoRetrieval.Controllers
                         if (term.docID[i] == doc1.docID)
                         {
                             //doc1Vector.Add((term.tfPerDoc[i] / doc1.terms.Length) * (1+(Math.Log((_context.Documents.Count()/term.docID.Length),2))));
-                            doc1Vector.Add(    (1+Math.Log10(term.tfPerDoc[i])) * (1 + (Math.Log10((_context.Documents.Count() / term.docID.Length)))));
+                            doc1Vector.Add(    (1+Math.Log10(term.tfPerDoc[i])) * (1 + (Math.Log10((docCount / term.docID.Length)))));
                         }
                     }
                 }
@@ -98,13 +99,14 @@ namespace InfoRetrieval.Controllers
             var docs = _context.Documents.ToList();
             int[] docpair = new int[2];
             double tempsim = 0;
-            for (int i = 0; i < docs.Count; i++)
+            for (int i = 0; i < docs.Count-1; i++)
             {
-                for (int j = 0; j < docs.Count; j++)
+                for (int j = i+1; j < docs.Count; j++)
                 {
                     if (docs[i].docID != docs[j].docID)
                     {
                         var a =getCosineSimilarity(docs[i].docID, docs[j].docID);
+                        Console.WriteLine("{0:0.0000} for "+ docs[i].docID +" and "+ docs[j].docID,a);
                         if (a > tempsim)
                         {
                             tempsim = a;
@@ -114,7 +116,7 @@ namespace InfoRetrieval.Controllers
                     }
                 }
             }
-            string result = "highest Cosine similarity between all documents= " + tempsim + " between documents " + docpair[0] + "and " + docpair[1] + ".\n Documents are: \n" + docs[docpair[0]].rawDocument + "\n \n" + docs[docpair[1]].rawDocument + ".";
+            string result = "highest Cosine similarity between all documents= " + tempsim + " between documents " + (docpair[0]+1) + " and " + (docpair[1]+1) + ".\n Documents are: \n" + docs[docpair[0]].rawDocument + "\n********\n" + docs[docpair[1]].rawDocument;
             return result;
         }
 

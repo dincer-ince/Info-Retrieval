@@ -99,7 +99,6 @@ namespace InfoRetrieval.Controllers
             var docs = _context.Documents.ToList();
             int[] docpair = new int[2];
             double tempsim = 0;
-            string result = "";
             for (int i = 0; i < docs.Count-1; i++)
             {
                 for (int j = i+1; j < docs.Count; j++)
@@ -107,8 +106,7 @@ namespace InfoRetrieval.Controllers
                     if (docs[i].docID != docs[j].docID)
                     {
                         var a =getCosineSimilarity(docs[i].docID, docs[j].docID);
-                        string an=string.Format("{0:0.0000}",a)+" for "+ docs[i].docID +" and "+ docs[j].docID+"\n";
-                        result += an;
+                        Console.WriteLine("{0:0.0000} for "+ docs[i].docID +" and "+ docs[j].docID,a);
                         if (a > tempsim)
                         {
                             tempsim = a;
@@ -118,8 +116,7 @@ namespace InfoRetrieval.Controllers
                     }
                 }
             }
-            string ab = "highest Cosine similarity between all documents= " + tempsim + " between documents " + (docpair[0]+1) + " and " + (docpair[1]+1) + ".\n Documents are: \n" + docs[docpair[0]].rawDocument + "\n********\n" + docs[docpair[1]].rawDocument;
-            result += ab;
+            string result = "highest Cosine similarity between all documents= " + tempsim + " between documents " + (docpair[0]+1) + " and " + (docpair[1]+1) + ".\n Documents are: \n" + docs[docpair[0]].rawDocument + "\n********\n" + docs[docpair[1]].rawDocument;
             return result;
         }
 
